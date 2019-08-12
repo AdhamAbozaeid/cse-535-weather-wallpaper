@@ -12,4 +12,24 @@
     <string name="editbox_minutes">30</string>
     <string name="apply_Settings">Apply</string>
     <string name="text_edit_date">July 24, 2019</string>
+
+    <string name="permission_location_rationale">We are requesting location permission to get your current location and set the wallpaper as per the current weather in your area.</string>
+    <string name="button_allow">Allow</string>
+    <string name="button_deny">Deny</string>
+    <string name="retry">Retry</string>
+    <string name="permission_location_neverask"><![CDATA[Please got to Settings -> Apps -> WeatherWallpaper -> Permissions and enable the location permission.]]></string>
+
+    <string name="permission_set_wallpaper_rationale">We are requesting this permission for setting wallpaper</string>
+    <string name="permission_set_wallpaper_neverask"><![CDATA[Please got to Settings -> Apps -> WeatherWallpaper -> Permissions and enable the Set wallpaper permission.]]></string>
+
+    <string name="wallpaper_content_description">Showing wallpaper for current weather</string>
+    <string name="wallpaper_change_successful">Wallpaper changed successfully!!</string>
+    <string name="wallpaper_change_unsuccessful">Sorry!! Unable to set wallpaper. Please try again.</string>
+
+    <string name="get_weather_info_unsuccessful">Sorry!! Unable to fetch weather information.</string>
+
+    <string name="unknown_state">Unknown</string>
+    <string name="weather_retrieved">Weather Retrieved</string>
+
+
 </resources>

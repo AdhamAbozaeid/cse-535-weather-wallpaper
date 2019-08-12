@@ -1,281 +1,348 @@
 package com.example.wallpaper_weather;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
-
 import android.Manifest;
-import android.app.DownloadManager;
-import android.app.PendingIntent;
+import android.annotation.SuppressLint;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.WallpaperManager;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.Geocoder;
-import android.net.Uri;
-import android.os.AsyncTask;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.location.LocationProvider;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
-import android.view.View;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.json.JSONException;
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserFactory;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
-import java.io.File;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
+import com.example.wallpaper_weather.model.WeatherDetails;
+import com.example.wallpaper_weather.network.ServiceFactory;
+import com.google.android.material.snackbar.Snackbar;
+
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.List;
 import java.util.Locale;
-import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity {
-    ImageButton androidThumbsUpButton;
-    ImageButton androidThumbsDownButton;
-    ImageButton androidSettingsButton;
-    private static int NOTIFICATION_ID_WEATHER_RETRIEVED = 0;
-    private static int NOTIFICATION_ID_WALLPAPER_SET = 1;
-    private static final int PERMESSION_STORAGE_CODE = 100;
-    private static final int PERMESSION_INTERNET_CODE = 101;
-    private static final int PERMESSION_WALLPAPER_CODE = 101;
-    Timer timer;
+import permissions.dispatcher.NeedsPermission;
+import permissions.dispatcher.OnNeverAskAgain;
+import permissions.dispatcher.OnPermissionDenied;
+import permissions.dispatcher.OnShowRationale;
+import permissions.dispatcher.PermissionRequest;
+import permissions.dispatcher.RuntimePermissions;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
-    final String serverIP = "192.168.43.249";
-    String serverDownladURL = "http://"+serverIP + "/weather/";
+import static com.example.wallpaper_weather.Constants.API_KEY;
 
-    int random=0;
+@RuntimePermissions
+public class MainActivity extends AppCompatActivity implements LocationListener {
+
+    private static final String TAG = MainActivity.class.getSimpleName();
+
+    private static final String NOTIFICATION_CHANEL_ID_WEATHER_RETRIEVAL_SUCCESS
+            = "weather-retrieval-success";
+    private static final int NOTIFICATION_ID_WEATHER_RETRIEVAL_SUCCESS = 100;
+
+    private ImageView ivWallpaper;
+
+    private TextView tvLocation;
+    private TextView tvState;
+    private TextView tvLatitude;
+    private TextView tvLongitude;
+    private TextView tvTemperature;
+    private TextView tvHumidity;
+    private TextView tvCondition;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        androidThumbsUpButton = (ImageButton)findViewById(R.id.image_button_thumbsup);
-        androidThumbsUpButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v1) {
+        ivWallpaper = findViewById(R.id.iv_wallpaper);
+        tvLocation = findViewById(R.id.tv_location);
+        tvState = findViewById(R.id.tv_state);
+        tvLatitude = findViewById(R.id.tv_latitude);
+        tvLongitude = findViewById(R.id.tv_longitude);
+        tvTemperature = findViewById(R.id.tv_temperature);
+        tvHumidity = findViewById(R.id.tv_humidity);
+        tvCondition = findViewById(R.id.tv_condition);
+        ImageView ivSettings = findViewById(R.id.iv_settings);
+        ivSettings.setOnClickListener(v -> preferencesActivity.launch(MainActivity.this));
 
-            }
-        });
-
-        androidThumbsDownButton = (ImageButton)findViewById(R.id.image_button_thumbsdown);
-        androidThumbsDownButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v2) {
-
-            }
-        });
-        androidSettingsButton = (ImageButton)findViewById(R.id.image_button_settings);
-        androidSettingsButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v3) {
-                //Intent intent = new Intent(this, preferencesActivity.class);
-                //startActivity(intent);
-                openPreferencesUI(v3);
-            }
-        });
-
-        if(checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED){
-            //permission is denied, request it.
-            String [] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
-            requestPermissions(permissions, PERMESSION_STORAGE_CODE);
-        }
-        if(checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED){
-            //permission is denied, request it.
-            String [] permissions = {Manifest.permission.READ_EXTERNAL_STORAGE};
-            requestPermissions(permissions, PERMESSION_STORAGE_CODE);
-        }
-        if(checkSelfPermission(Manifest.permission.INTERNET) == PackageManager.PERMISSION_DENIED){
-            //permission is denied, request it.
-            String [] permissions = {Manifest.permission.INTERNET};
-            requestPermissions(permissions, PERMESSION_INTERNET_CODE);
-        }
-        if(checkSelfPermission(Manifest.permission.SET_WALLPAPER) == PackageManager.PERMISSION_DENIED){
-            //permission is denied, request it.
-            String [] permissions = {Manifest.permission.SET_WALLPAPER};
-            requestPermissions(permissions, PERMESSION_WALLPAPER_CODE);
-        }
-
-
-        timer = new Timer("WeatherTimer");
-        TimerTask timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                JSONWeatherTask task = new JSONWeatherTask();
-                task.execute(new String[]{"lat=33.423204&lon=-111.939320"});
-            }
-        };
-        timer.schedule(timerTask, 0, 5000);
+        fetchLocationWithPermissionCheck();
     }
 
-    public void openPreferencesUI(View view) {
-        Intent intent = new Intent(this, preferencesActivity.class);
-        startActivity(intent);
+    private void fetchLocationWithPermissionCheck() {
+        // NOTE: delegate the permission handling to generated method
+        MainActivityPermissionsDispatcher.fetchLocationWithPermissionCheck(MainActivity.this);
     }
 
-    public void setWallpaper(String imagePath) {
-        // Locate ImageView in activity_main.xml
-        //ImageView mywallpaper = (ImageView) findViewById(R.id.wallpaper);
+    private void setWallpaperWithPermissionCheck() {
+        // NOTE: delegate the permission handling to generated method
+        MainActivityPermissionsDispatcher.setWallpaperWithPermissionCheck(MainActivity.this);
+    }
 
-        // Attach image into ImageView
-        //mywallpaper.setImageResource(R.drawable.wallpaper);
+    @SuppressLint("MissingPermission")
+    @NeedsPermission({Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION})
+    void fetchLocation() {
+        Log.i(TAG, "fetchLocation");
+        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 360000, 200000, this);
+    }
 
-        // Retrieve a WallpaperManager
-        WallpaperManager myWallpaperManager = WallpaperManager
-                .getInstance(MainActivity.this);
+    // Annotate a method which explains why the permission/s is/are needed.
+    // It passes in a `PermissionRequest` object which can continue or abort the current permission
+    @OnShowRationale({Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION})
+    void showRationaleForLocation(PermissionRequest request) {
+        new AlertDialog.Builder(this)
+                .setMessage(R.string.permission_location_rationale)
+                .setPositiveButton(R.string.button_allow, (dialog, button) -> request.proceed())
+                .setNegativeButton(R.string.button_deny, (dialog, button) -> request.cancel())
+                .show();
+    }
 
-        try {
-            // Change the current system wallpaper
-            //Bitmap wallpaperbmap = BitmapFactory.decodeFile(imagePath);
-            Bitmap wallpaperbmap = BitmapFactory.decodeResource(getResources(), R.drawable.wallpaper);
-            myWallpaperManager.setBitmap(wallpaperbmap);
+    // Annotate a method which is invoked if the user doesn't grant the permissions
+    @OnPermissionDenied({Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION})
+    void showDeniedForLocation() {
+        Snackbar.make(ivWallpaper, R.string.permission_location_rationale, Snackbar.LENGTH_INDEFINITE)
+                .setAction(R.string.button_allow,
+                        v -> fetchLocationWithPermissionCheck()
+                )
+                .show();
+    }
 
-            // Show a toast message on successful change
-            Toast.makeText(MainActivity.this,
-                    "Wallpaper successfully changed", Toast.LENGTH_SHORT)
-                    .show();
+    // Annotates a method which is invoked if the user
+    // chose to have the device "never ask again" about a permission
+    @OnNeverAskAgain({Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION})
+    void showNeverAskForLocation() {
+        Snackbar.make(ivWallpaper, R.string.permission_location_neverask, Snackbar.LENGTH_INDEFINITE)
+                .show();
+    }
 
-            showWallPaperNotification();
+    @NeedsPermission(Manifest.permission.SET_WALLPAPER)
+    void setWallpaper() {
+        Glide.with(this)
+                .asBitmap()
+                .load(R.drawable.wallpaper) // Replace this with URL
+                .into(new CustomTarget<Bitmap>() {
+                    @Override
+                    public void onResourceReady(@NonNull Bitmap wallpaperBitmap,
+                                                @Nullable Transition<? super Bitmap> transition) {
+                        ivWallpaper.setImageBitmap(wallpaperBitmap);
+                        WallpaperManager wallpaperManager = WallpaperManager.getInstance(MainActivity.this);
+                        try {
+                            wallpaperManager.setBitmap(wallpaperBitmap);
+                            Toast.makeText(MainActivity.this,
+                                    R.string.wallpaper_change_successful, Toast.LENGTH_SHORT)
+                                    .show();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            Snackbar.make(ivWallpaper,
+                                    R.string.wallpaper_change_successful, Snackbar.LENGTH_INDEFINITE)
+                                    .setAction(R.string.retry, v -> fetchLocationWithPermissionCheck())
+                                    .show();
+                        }
 
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
+                    }
+
+                    @Override
+                    public void onLoadCleared(@Nullable Drawable placeholder) {
+
+                    }
+                });
+
+    }
+
+    @OnShowRationale(Manifest.permission.SET_WALLPAPER)
+    void showRationaleForSetWallpaper(PermissionRequest request) {
+        new AlertDialog.Builder(this)
+                .setMessage(R.string.permission_set_wallpaper_rationale)
+                .setPositiveButton(R.string.button_allow, (dialog, button) -> request.proceed())
+                .setNegativeButton(R.string.button_deny, (dialog, button) -> request.cancel())
+                .show();
+    }
+
+    @OnPermissionDenied(Manifest.permission.SET_WALLPAPER)
+    void showDeniedForSetWallpaper() {
+        Snackbar.make(ivWallpaper, R.string.permission_set_wallpaper_rationale, Snackbar.LENGTH_INDEFINITE)
+                .setAction(R.string.button_allow,
+                        v -> fetchLocationWithPermissionCheck()
+                )
+                .show();
+    }
+
+    @OnNeverAskAgain(Manifest.permission.SET_WALLPAPER)
+    void showNeverAskForSetWallpaper() {
+        Snackbar.make(ivWallpaper, R.string.permission_set_wallpaper_neverask, Snackbar.LENGTH_INDEFINITE)
+                .show();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        // NOTE: delegate the permission handling to generated method
+        MainActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode,
+                grantResults);
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        Log.i(TAG, "onLocationChanged provider: " + location.getProvider()
+                + " coordinates: [" + location.getLatitude() + "," + location.getLongitude() + "]");
+//        final String state = getStateName(location.getLatitude(), location.getLongitude());
+        final String state = "";
+        final Call<WeatherDetails> weatherDetailsByCoordinatesCall = ServiceFactory.getInstance()
+                .getOpenWeatherService()
+                .getWeatherDetailsByCoordinates(API_KEY, String.valueOf(location.getLatitude()),
+                        String.valueOf(location.getLongitude()));
+        weatherDetailsByCoordinatesCall.enqueue(new Callback<WeatherDetails>() {
+            @Override
+            public void onResponse(Call<WeatherDetails> call, Response<WeatherDetails> response) {
+                WeatherDetails weatherDetails = response.body();
+                if (weatherDetails != null) {
+                    String location = weatherDetails.getCityName() + ", "
+                            + weatherDetails.getSys().getCountryCode();
+                    tvLocation.setText(location);
+                    if (state.isEmpty()) {
+                        tvState.setText(R.string.unknown_state);
+                    } else {
+                        tvState.setText(state);
+                    }
+                    tvLatitude.setText(String.valueOf(weatherDetails.getCoordinates().getLatitude()));
+                    tvLongitude.setText(String.valueOf(weatherDetails.getCoordinates().getLongitude()));
+                    String temperatureInFahrenheit = String
+                            .valueOf(convertKelvinToFahrenheit(weatherDetails.getMain().getTemperature()));
+                    tvTemperature.setText(temperatureInFahrenheit);
+                    tvHumidity.setText(String.format("%s%%", weatherDetails.getMain().getHumidity()));
+                    if (weatherDetails.getWeatherConditionCodeList() != null
+                            && !weatherDetails.getWeatherConditionCodeList().isEmpty())
+                        tvCondition.setText(weatherDetails.getWeatherConditionCodeList().get(0)
+                                .getWeatherParameterGroup());
+
+                    showWeatherRetrieveSuccessfulNotification();
+
+                    // NOTE: delegate the permission handling to generated method
+                    MainActivityPermissionsDispatcher.setWallpaperWithPermissionCheck(MainActivity.this);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<WeatherDetails> call, Throwable t) {
+                t.printStackTrace();
+                Snackbar.make(ivWallpaper,
+                        R.string.get_weather_info_unsuccessful, Snackbar.LENGTH_INDEFINITE)
+                        .setAction(R.string.retry, v -> fetchLocationWithPermissionCheck())
+                        .show();
+            }
+        });
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+        if (status == LocationProvider.AVAILABLE) {
+            onProviderEnabled(provider);
+        } else {
+            onProviderDisabled(provider);
         }
     }
 
+    @Override
+    public void onProviderEnabled(String provider) {
+        Log.i(TAG, "onProviderEnabled provider: " + provider);
+    }
 
-    private void showWallPaperNotification() {
-        Intent intent = new Intent(MainActivity.this, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "1")
-                .setSmallIcon(R.drawable.thumbs_up2)
-                .setContentTitle("New Wallpaper Set!")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true);;
+    @Override
+    public void onProviderDisabled(String provider) {
+        Log.i(TAG, "onProviderDisabled provider: " + provider);
+    }
+
+    private void showWeatherRetrieveSuccessfulNotification() {
+        Log.i(TAG, "showWeatherRetrieveSuccessfulNotification start");
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this,
+                NOTIFICATION_CHANEL_ID_WEATHER_RETRIEVAL_SUCCESS)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentTitle(getString(R.string.weather_retrieved))
+                .setContentText("Wohoo! Weather is here")
+                .setPriority(NotificationCompat.PRIORITY_HIGH);
+
+        createNotificationChannel();
+
+        Log.i(TAG, "showWeatherRetrieveSuccessfulNotification notifying..");
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-        notificationManager.notify(NOTIFICATION_ID_WALLPAPER_SET, builder.build());
+
+        // notificationId is a unique int for each notification that you must define
+        notificationManager.notify(NOTIFICATION_ID_WEATHER_RETRIEVAL_SUCCESS, builder.build());
+
+        Log.i(TAG, "showWeatherRetrieveSuccessfulNotification notification sent!");
     }
 
-    private class JSONWeatherTask extends AsyncTask<String, Void, Weather> {
+    private void createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Log.i(TAG, "createNotificationChannel");
 
-        @Override
-        protected Weather doInBackground(String... params) {
-            Weather weather = new Weather();
-            String data = ( (new WeatherHttpClient()).getWeatherData(params[0]));
-
-            try {
-                weather = JSONWeatherParser.getWeather(data);
-
-                getImageFromServer(weather.currentCondition.getCondition());
-
-                setWallpaper(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath()+"/"+random+".jpeg");
-
-                String deleteCurrent = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() +"/"+ random+".jpg";
-                File downloadFile = new File(deleteCurrent);
-
-                if(downloadFile.exists()){
-                    downloadFile.delete();
-                }
-                // Let's retrieve the icon
-               // weather.iconData = ( (new WeatherHttpClient()).getImage(weather.currentCondition.getIcon()));
-
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            return weather;
-
-        }
-        @Override
-        protected void onPostExecute(Weather weather) {
-            super.onPostExecute(weather);
-            ((TextView) findViewById(R.id.tempTxtView)).setText("" + Math.round(((weather.temperature.getTemp() - 273.15)*9/5)+32) + "°F");
-/*            if (weather.iconData != null && weather.iconData.length > 0) {
-                Bitmap img = BitmapFactory.decodeByteArray(weather.iconData, 0, weather.iconData.length);
-                imgView.setImageBitmap(img);
-            }*/
-
-            ((TextView) findViewById(R.id.cityTxtView)).setText(weather.location.getCity() + "," + weather.location.getCountry());
-            Address address = getAddressFromLocation(weather.location.getLatitude(), weather.location.getLongitude());
-            if (address != null)
-                ((TextView) findViewById(R.id.stateTxtView)).setText(address.getAdminArea());
-            else
-                ((TextView) findViewById(R.id.stateTxtView)).setText("Unidentified");
-            ((TextView) findViewById(R.id.longTxtView)).setText("" + weather.location.getLongitude() + "°");
-            ((TextView) findViewById(R.id.latTxtView)).setText("" + weather.location.getLatitude() + "°");
-            ((TextView) findViewById(R.id.condTxtView)).setText(weather.currentCondition.getCondition() + "(" + weather.currentCondition.getDescr() + ")");
-            ((TextView) findViewById(R.id.humidTxtView)).setText("" + weather.currentCondition.getHumidity() + "%");
-            //((TextView) findViewById(R.id.pressTxtView)).setText("" + weather.currentCondition.getPressure() + " hPa");
-            //((TextView) findViewById(R.id.windSpdTxtView)).setText("" + weather.wind.getSpeed() + " mps");
-            //((TextView) findViewById(R.id.windDegTxtView)).setText("" + weather.wind.getDeg() + "°");
-            //((TextView) findViewById(R.id.rainTxtView)).setText("" + weather.rain.getTime() + " " + weather.rain.getAmmount());
-            showWeatherNotification();
-        }
-
-        private void showWeatherNotification() {
-            Intent intent = new Intent(MainActivity.this, MainActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            PendingIntent pendingIntent = PendingIntent.getActivity(MainActivity.this, 0, intent, 0);
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(MainActivity.this, "1")
-                    .setSmallIcon(R.drawable.thumbs_up2)
-                    .setContentTitle("Weather Retrieved!")
-                    .setContentText("Wohoo! Weather is here")
-                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                    .setContentIntent(pendingIntent)
-                    .setAutoCancel(true);;
-
-            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(MainActivity.this);
-
-            notificationManager.notify(NOTIFICATION_ID_WEATHER_RETRIEVED, builder.build());
-        }
-
-        private Address getAddressFromLocation(final double latitude, final double longitude) {
-            Geocoder geocoder = new Geocoder(getApplicationContext(), Locale.getDefault());
-            try {
-                List<Address> addressList = geocoder.getFromLocation(
-                        latitude, longitude, 1);
-                if (addressList != null && addressList.size() > 0) {
-                    return addressList.get(0);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return null;
+            CharSequence name = "weather-retrieval";
+            String description = "Informs whether the weather retrieval was successful or not!!";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel
+                    = new NotificationChannel(NOTIFICATION_CHANEL_ID_WEATHER_RETRIEVAL_SUCCESS,
+                    name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
         }
     }
 
-    public void getImageFromServer(String weatherType){
+    private double convertKelvinToFahrenheit(double temperatureInKelvin) {
+        return Math.round(((temperatureInKelvin - 273.15) * 9 / 5) + 32);
+    }
 
-        Random rnd = new Random();
-        random = rnd.nextInt(15) + 1;
-        serverDownladURL = serverDownladURL + weatherType + "/" + Integer.toString(random) + ".jpg";
-
-        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(serverDownladURL));
-
-        request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_MOBILE |
-                DownloadManager.Request.NETWORK_WIFI);
-        request.allowScanningByMediaScanner();
-        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, random+".jpg");
-
-        DownloadManager manager = (DownloadManager)getSystemService(Context.DOWNLOAD_SERVICE);
-        manager.enqueue(request);
+    private String getStateName(double latitude, double longitude) {
+        String adminArea = "";
+        Geocoder geocoder = new Geocoder(getBaseContext(), Locale.getDefault());
+        List<Address> addresses;
         try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
+            addresses = geocoder.getFromLocation(latitude, longitude, 1);
+            if (addresses.size() > 0) {
+                Log.i(TAG, "locality: " + addresses.get(0).getLocality());
+                adminArea = addresses.get(0).getAdminArea();
+            }
+        } catch (IOException e) {
             e.printStackTrace();
         }
-        return;
+        return adminArea;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        locationManager.removeUpdates(this);
     }
 }

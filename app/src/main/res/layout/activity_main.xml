@@ -1,169 +1,109 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/ar6"
+    tools:background="@color/colorPrimaryLight"
     tools:context=".MainActivity">
 
-    <!--ImageView
+    <ImageView
+        android:id="@+id/iv_wallpaper"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:contentDescription="@string/wallpaper_content_description"
         android:scaleType="centerCrop"
-        android:src="@drawable/ar3"/-->
-    <TextView
-        android:id="@+id/cityTxtView"
-        android:layout_width="200dp"
-        android:layout_height="22dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:gravity="right"
-        android:text="Location"
-        android:textAlignment="textEnd"
-        android:textColor="@android:color/white"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:text="@string/location_textbox" />
+        tools:src="@drawable/wallpaper" />
 
-    <TextView
-        android:id="@+id/stateTxtView"
-        android:layout_width="92dp"
-        android:layout_height="22dp"
-        android:layout_marginTop="36dp"
-        android:layout_marginEnd="16dp"
-        android:gravity="right"
-        android:text="State"
-        android:textColor="@android:color/white"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:text="@string/state_textbox" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="@dimen/dimen_16dp">
 
-    <DigitalClock
-        android:id="@+id/simpleDigitalClock"
-        android:layout_width="342dp"
-        android:layout_height="218dp"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        android:background="@android:color/transparent"
-        android:fontFamily="sans-serif-thin"
-        android:padding="20dp"
-        android:textAlignment="center"
-        android:textAllCaps="true"
-        android:textColor="@android:color/white"
-        android:textSize="75sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.492"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/latTxtView"
-        android:layout_width="92dp"
-        android:layout_height="23dp"
-        android:layout_marginEnd="16dp"
-        android:gravity="right"
-        android:text="Latitude"
-        android:textColor="@android:color/white"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/stateTxtView"
-        tools:text="@string/latitude_textbox" />
+            <TextView
+                android:id="@+id/tv_location"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.AppCompat.Body1.White"
+                tools:text="Location" />
 
-    <TextView
-        android:id="@+id/longTxtView"
-        android:layout_width="92dp"
-        android:layout_height="19dp"
-        android:layout_marginEnd="16dp"
-        android:gravity="right"
-        android:text="Longitude"
-        android:textColor="@android:color/white"
-        android:textStyle="bold"
-        android:typeface="normal"
-        android:visibility="visible"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/latTxtView"
-        tools:text="@string/longitude_textbox" />
+            <TextView
+                android:id="@+id/tv_state"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.AppCompat.Body1.White"
+                tools:text="State" />
 
-    <TextView
-        android:id="@+id/tempTxtView"
-        android:layout_width="88dp"
-        android:layout_height="23dp"
-        android:layout_marginStart="16dp"
-        android:text="Temperature"
-        android:textColor="@android:color/white"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/humidTxtView"
-        app:layout_constraintStart_toStartOf="parent"
-        tools:text="@string/temperature_textbox" />
+            <TextView
+                android:id="@+id/tv_latitude"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.AppCompat.Body1.White"
+                tools:text="Latitude" />
 
-    <TextView
-        android:id="@+id/humidTxtView"
-        android:layout_width="65dp"
-        android:layout_height="20dp"
-        android:layout_marginStart="16dp"
-        android:text="Humidity"
-        android:textColor="@android:color/background_light"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/condTxtView"
-        app:layout_constraintStart_toStartOf="parent"
-        tools:text="@string/humidity_textbox" />
+            <TextView
+                android:id="@+id/tv_longitude"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.AppCompat.Body1.White"
+                tools:text="Longitude" />
 
-    <TextView
-        android:id="@+id/condTxtView"
-        android:layout_width="165dp"
-        android:layout_height="18dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginBottom="8dp"
-        android:text="Condition"
-        android:textColor="@android:color/white"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        tools:text="@string/weather_condition_textbox" />
+        </LinearLayout>
 
-    <ImageButton
-        android:id="@+id/image_button_thumbsup"
-        android:layout_width="35dp"
-        android:layout_height="35dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="20dp"
-        android:background="@null"
-        android:scaleType="fitXY"
-        android:src="@drawable/thumbs_up2"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/thumbs_up2" />
+        <TextClock
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="@dimen/dimen_16dp"
+            android:layout_marginBottom="@dimen/dimen_16dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display3"
+            android:textColor="@android:color/white"
+            tools:text="6.10AM" />
 
-    <ImageButton
-        android:id="@+id/image_button_thumbsdown"
-        android:layout_width="35dp"
-        android:layout_height="35dp"
-        android:layout_marginTop="20dp"
-        android:background="@null"
-        android:scaleType="fitXY"
-        android:src="@drawable/thumbs_down2"
-        app:layout_constraintStart_toEndOf="@+id/image_button_thumbsup"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/thumbs_down2" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-    <ImageButton
-        android:id="@+id/image_button_settings"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
-        android:background="@null"
-        android:scaleType="fitXY"
-        android:src="@drawable/settings4"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:srcCompat="@drawable/settings4" />
+            <TextView
+                android:id="@+id/tv_temperature"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.AppCompat.Body1.White"
+                tools:text="Temperature" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <TextView
+                android:id="@+id/tv_humidity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.AppCompat.Body1.White"
+                tools:text="Humidity" />
+
+            <TextView
+                android:id="@+id/tv_condition"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.AppCompat.Body1.White"
+                tools:text="Condition" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/iv_settings"
+        android:layout_width="@dimen/settings_icon_size"
+        android:layout_height="@dimen/settings_icon_size"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="@dimen/dimen_16dp"
+        android:layout_marginBottom="@dimen/dimen_16dp"
+        android:src="@drawable/ic_settings_light" />
+
+</FrameLayout>
